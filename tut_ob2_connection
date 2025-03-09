@@ -1,0 +1,54 @@
+1. bluetoothctl
+
+2. power on 
+
+3. pairable on 
+
+4. agent on 
+
+5. default-agent
+
+5. scan on
+
+6. find the mac address and pair: 
+
+7. pair B0:FD:E1:3F:5C:1F
+
+8. we then have to bind addapter to serial port 
+
+9. sudo rfcomm bind rfcomm0 B0:FD:E1:3F:5C:1F  
+
+10. we then use screen to communicate with it 
+
+11: minicom -D /dev/rfcomm0 
+
+12: atz
+
+13: athl 
+
+14: atsp0 
+
+15: to exit minicom you have to do ctr A -> z -> X 
+
+
+
+-----------------------
+
+modify the /etc/rc.local file to do things at bootup and startup 
+I am writting a script which we will put into the local file to run at boot up
+
+
+Another thing I did was create the file sudo nano /stc/systemd/system/rfcomm-bind.service
+
+then I ran these 3 command : 
+sudo systemctl daaemon-reload
+sudo systemctl enable rfcomm-bind.service
+sudo systemctl start rfcomm-bind.service 
+
+
+systemd is a serivlce manaager for linux OS. which is used to manage system serices processes and other system tasks during startup and runtime 
+
+sudo nano /etc/bluetooth/input.conf : this is where I added the timeout = 0 
+
+
+-------------------this opens a screen window-----------
