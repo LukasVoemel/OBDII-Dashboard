@@ -7,33 +7,69 @@ Mode $01 is what provides for powertrain diagnostic data, its what I will use
 then after that you will use the according PID to access specifc data 
 
 '''
-# make graphical interafece 
-# read the data 
-# read data in teh right intervals 
-# be able to do the whole thing at bootup
 
 import serial 
 import time 
 import sys
 from PyQt5.QtWidgets import QLabel, QApplication, QMainWindow, QGridLayout, QWidget
+from PyQt5.QtGui import QKeyEvent
+from PyQt5.QtCore import Qt, QTimer
 
-
-class MainWindow(QMainWindow):
+class MainWindow(QWidget):
     def __init__(self):
         super().__init__()
-        self.setWindowTitle("Hellow, World")
+        self.setWindowTitle("OBD-II")
 
         grid_layout = QGridLayout()
-        grid_layout.addWidget(QLabel("ONE"), 0, 0)
-        grid_layout.addWidget(QLabel("ONE"),1, 0)
-        grid_layout.addWidget(QLabel("ONE"),1, 1)
-        grid_layout.addWidget(QLabel("ONE"), 2, 1)
+        self.setLayout(grid_layout)
 
-        widget = QWidget()
-        widget.setLayout(grid_layout)
-        self.setCentralWidget(widget)
+        #when driving at night bright coloras are very harsh so black background and light writing 
+        self.setStyleSheet('background-color:#0D1B0F;')
 
-        self.show()
+        self.labels = {
+            "LOAD": QLabel("LOAD: ---"),
+            "GEAR": QLabel("GEAR: ---"),
+            "COOLANT": QLabel("COOLANT: ---"),
+            "RPM": QLabel("RPM: ---")
+        }
+        row, col = 0 ,0 
+        for key,label in self.labels.items():
+            label.setStyleSheet("border: 2px solid black;"
+            "font-size: 32px; "
+            "padding: 10px;"
+            "font-weight: bold;"
+            "color: #A3D9A5;"
+            "text-align: center;" )
+            label.setMinimumSize(150,100)
+            grid_layout.addWidget(label, row, col)   
+            col += 1
+            if col > 1:
+                col = 0 
+                row += 1 
+
+        self.timer = QTimer()
+        self.timer.timeout.connect(self.update_data)
+        self.timer.start(100)
+    
+    def update_data(self):
+        data = read_request()
+
+        units = {
+            "LOAD" : " %", 
+            "GEAR" : "", 
+            "COOLANT" : " °C", 
+            "RPM" : ""
+        }
+
+        for key,value in data.items():
+            self.labels[key].setText(f"{key}: {value}{units.get(key, '')}")
+
+  
+
+    def keyPressEvent(self,event:QKeyEvent):
+        if event.key() == Qt.Key.Key_Escape:
+            self.showNormal()
+
 
 
 #timeout=2: timeout=0 makes that the program wont wait for any data from the serial device, if no data avialabe, then return immedeialy, timeout=2 makes it wait 2 seconds for data to be received 
@@ -119,6 +155,7 @@ def send_request():
 def read_request():
 
     responses = send_request()
+    values = {}
 
     for key, value in responses.items():
 
@@ -129,10 +166,12 @@ def read_request():
                 else:
                     load_data = b'00'
             load = int(load_data, 16) / 2
-            print(f"Engine Load: {load}%")
+            values['LOAD'] = load
+            #print(f"Engine Load: {load}%")
 
         elif key == 'GEAR':
-            print("GEAR ")
+            values['GEAR'] = 0
+            #print("GEAR ")
 
         elif key == 'COOLANT':
             for i in range(len(value)):
@@ -140,7 +179,8 @@ def read_request():
                     temp_data = value[i+2]
             
             coolant_temp = int(temp_data, 16) / 2
-            print(f"Coolant temp: {coolant_temp}°C")
+            values['COOLANT'] = coolant_temp
+            #print(f"Coolant temp: {coolant_temp}°C")
 
         elif key == 'RPM':
             for i in range(len(value)):
@@ -149,18 +189,16 @@ def read_request():
                     low_byte = int(value[i+3], 16)
 
             rpm = (high_byte * 256 + low_byte) / 4
-            print(f"RPM: {rpm}")
+            values['RPM'] = rpm
+            #print(f"RPM: {rpm}")
 
         else:
             print("ERROR NO KEY FOUND")
 
+    return values
+
 init_obd()
-
-while True:
-    read_request()
-    
-
-
-# app = QApplication(sys.argv)
-# window = MainWindow()
-# app.exec()
+app = QApplication(sys.argv)
+window = MainWindow()
+window.showFullScreen()
+sys.exit(app.exec())
