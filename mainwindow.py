@@ -6,6 +6,7 @@ class MainWindow(QWidget):
     def __init__(self, req_func):
         super().__init__()
 
+        self.data = None
         self.req_func = req_func
         self.setWindowTitle("OBD-II")
 
@@ -17,7 +18,7 @@ class MainWindow(QWidget):
 
         self.labels = {
             "LOAD": QLabel("LOAD: ---"),
-            "TORQUE": QLabel("TORQUE: ---"),
+            "THROTTLE": QLabel("THROTTLE: ---"),
             "COOLANT": QLabel("COOLANT: ---"),
             "RPM": QLabel("RPM: ---")
         }
@@ -41,16 +42,15 @@ class MainWindow(QWidget):
         self.timer.start(100)
     
     def update_data(self):
-        data = self.req_func()
-
+        self.data = self.req_func()
         units = {
             "LOAD" : " %", 
-            "TORQUE" : "%", 
+            "THROTTLE" : "%", 
             "COOLANT" : " °C", 
             "RPM" : ""
         }
 
-        for key,value in data.items():
+        for key,value in self.data.items():
             self.labels[key].setText(f"{key}: {value}{units.get(key, '')}")
 
   

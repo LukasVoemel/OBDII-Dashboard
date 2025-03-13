@@ -63,7 +63,7 @@ def send_request():
 
     requests = { 
         'LOAD' : '0104\r', 
-        'TORQUE' : '0162\r', 
+        'THROTTLE' : '0111\r', 
         'COOLANT' :'0105\r', 
         'RPM' : '010C\r'
     }
@@ -79,14 +79,13 @@ def send_request():
         chunks = clean_response.split(b'\r')
         first_response = chunks[0] #yields first response only 
         data_parts = first_response.split(b' ')
-        print(f'{key} = {data_parts}')
+        #print(f'{key} = {data_parts}')
         response_dic[key] = data_parts
     
     return response_dic
 
 
 def read_request():
-    print("HELLO")
 
     responses = send_request()
     values = {}
@@ -97,7 +96,6 @@ def read_request():
             load_data = b'00'
 
             for i in range(len(value)):
-                print(i,"      " ,value[i])
                 
                 if 1 < len(value) - 1:
                     
@@ -105,21 +103,23 @@ def read_request():
                         load_data = value[i+2]
                         break
 
-            load = int(load_data, 16) / 2
-            values['LOAD'] = load
+            load = int(load_data, 16) / 2.55
+            values['LOAD'] = int(load)
             #print(f"Engine Load: {load}%")
 
-        elif key == 'TORQUE':
+        elif key == 'THROTTLE':
             
+            t_data = b'00'
             for i in range(len(value)):
-                if value[i] == b'41' and value[i+1] == b'62':
+                if value[i] == b'41' and value[i+1] == b'11':
                     t_data = value[i+2]
             
-            torque = int(t_data, 16) - 125
-            values['TORQUE'] = torque
-            
+            torque = int(t_data, 16) / 2.55
+            values['THROTTLE'] = int(torque)            
 
         elif key == 'COOLANT':
+
+            temp_data = b'00'
             for i in range(len(value)):
                 if value[i] == b'41' and value[i+1] == b'05':
                     temp_data = value[i+2]
@@ -129,6 +129,9 @@ def read_request():
             #print(f"Coolant temp: {coolant_temp}°C")
 
         elif key == 'RPM':
+
+            high_byte = 0
+            low_byte = 0
             for i in range(len(value)):
                 if value[i] == b'41' and value[i+1] ==b'0C':
                     high_byte = int(value[i+2], 16)
@@ -147,6 +150,6 @@ def read_request():
 
 init_obd()
 app = QApplication(sys.argv)
-window = MainWindow(req_func=read_request())
+window = MainWindow(req_func=read_request)
 window.showFullScreen()
 sys.exit(app.exec())
